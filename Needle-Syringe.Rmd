@@ -1,0 +1,258 @@
+---
+title: "SC County Syringe services program"
+output: pdf_document
+---
+(This will not render properly as Rmd to PDF...)
+
+Source of data: Transcribed from the PDFs at http://www.santacruzhealth.org/HSAHome/HSADivisions/PublicHealth/SyringeServicesProgram.aspx
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(lubridate)
+```
+# Needles Data from SC County SSP reports
+
+Santa Cruz County population was about 296,000 in 2017. City of Santa Cruz population was about 65,000.
+Tourism: 3 million visitors per year generated \$1 billion (\$976 million in 2017) in revenue in 2018.
+
+```{r echo=FALSE}
+# paste as data frame from NeedleTimeSeries pages file 
+# Annual data totals from both SC and Watsonville
+needf = data.frame(
+            Year = c(2013L, 2014L, 2015L, 2016L, 2017L, 2018L),
+          Visits = c(2314, 3641, 3781, 4318, 4173, 3258),
+             IDs = c(751L, 1002L, 778L, 689L, 631L, 578L),
+       Dispensed = c(132903, 201336, 258512, 339070, 460205, 593174),
+       Collected = c(132490, 205144, 256817, 331818, 457079, 597987),
+   SingleVisitID = c(445L, 560L, 407L, 279L, 222L, 240L),
+     MultVisitID = c(306L, 442L, 371L, 410L, 409L, 338L),
+         ForSelf = c(NaN, 2087, 1856, 2282, 1875, 1459),
+       ForOthers = c(NaN, 1173, 1925, 2036, 2298, 1799),
+         Over100 = c(219L, 526L, 730L, 973L, 948L, 773L),
+         Over200 = c(162L, 175L, 273L, 379L, 747L, 1088L),
+      PctOver100 = c(9.5, 14, 19, 23, 23, 24),
+      PctOver200 = c(7.2, 5, 7, 9, 18, 33)
+)
+
+# Santa Cruz center data
+scdf = data.frame(
+            Year = c(2013L, 2014L, 2015L, 2016L, 2017L, 2018L),
+          Visits = c(2183L, 3205L, 3366L, 3846L, 3887L, 2977L),
+             IDs = c(692L, 802L, 659L, 593L, 577L, 535L),
+       Dispensed = c(127761L, 184978L, 237899L, 313694L, 446408L, 577532L),
+       Collected = c(127283L, 188920L, 236242L, 306457L, 443282L, 582345L),
+   SingleVisitID = c(411L, 425L, 313L, 205L, 181L, 197L),
+     MultVisitID = c(281L, 377L, 346L, 388L, 396L, 338L),
+         ForSelf = c(NA, 1811L, 1650L, 2003L, 1705L, 1179L),
+       ForOthers = c(NA, 1069L, 1716L, 1843L, 2181L, 1798L),
+         Over100 = c(205L, 470L, 619L, 836L, 876L, 871L),
+         Over200 = c(162L, 168L, 263L, 379L, 746L, 1088L),
+      PctOver100 = c(9L, 15L, 18L, 22L, 23L, 23L),
+      PctOver200 = c(7L, 5L, 8L, 10L, 19L, 37L)
+)
+
+
+#needf = whole county
+needf=mutate(needf,NumPerID=Dispensed/IDs,PctOthers=ForOthers/(ForOthers+ForSelf), TotalPctOver100=PctOver100+PctOver200)
+
+#scdf = santa cruz only
+scdf = mutate(scdf,NumPerID=Dispensed/IDs,PctOthers=ForOthers/(ForOthers+ForSelf), TotalPctOver100=PctOver100+PctOver200)
+
+```
+
+```{r Dispense}
+ggplot(dplyr::filter(needf,Year>2013),aes(x=Year,y=Dispensed)) + geom_line() + geom_point(color="red",size=3) +
+scale_y_continuous(name="Dispensed", labels = scales::comma, limits=c(0, 600000)) +theme_bw()
+
+```
+
+```{r Dispense, fig.height = 5, fig.width = 7}
+ggplot(dplyr::filter(scdf,Year>2013),aes(x=Year,y=Dispensed)) + geom_col(fill="purple3") + geom_text(aes(label=round(Dispensed),hjust = 0.5,vjust=0),nudge_y = -25000,color="gray98") +
+scale_y_continuous(name="Dispensed", labels = scales::comma, limits=c(0, 600000)) +theme_bw()  + ggtitle("Needles dispensed (SC only)") + theme_bw() + theme(axis.text=element_text(size=12))
+
+```
+
+Double graph
+```{r Dispense}
+ggplot(dplyr::filter(scdf,Year>2013),aes(x=Year,y=IDs)) + geom_line() + geom_point(color="red",size=3) + geom_line(aes(y=NumPerID)) + geom_point(aes(y=NumPerID),color="blue",size=3) +
+theme_bw()
+
+```
+## Getting Over 100 have gone up 5x since the start of the program...
+```{r per ID}
+ggplot(scdf,aes(x=Year,y=TotalPctOver100)) + geom_col()  + 
+	scale_y_continuous(name="Over100",labels = scales::comma)+
+	geom_text(aes(label=round(IDs),hjust = 0.5,vjust=0),nudge_y = 10,color="darkgrey")
+```
+
+
+```{r}
+
+ggplot(needf,aes(x=round(Year),size=NumPerID)) + geom_point(aes(y=Dispensed/1000),color="salmon") + geom_point(aes(y=IDs),color="steelblue3") + # ylim(0, 1200) +
+	scale_y_continuous(name="Individuals served", limits=c(0,NA),labels = scales::comma)+
+	scale_x_continuous(name="Needles distributed", labels = scales::comma) 
+
+```
+As the number of people helped decreases, the number receiving more than 100 increased.
+
+##### MULTIPANEL PLOT #####  
+```{r}
+library(gridExtra)  # Needed for grid.arrange
+library(grid) 
+
+a= ggplot(dplyr::filter(scdf,Year>2013),aes(x=Year,y=Dispensed))  + geom_line() + geom_point(color="blue",size=3) +
+scale_y_continuous(labels = scales::comma, limits=c(0, 600000),name="") + ggtitle("Needles dispensed") + theme_bw() + theme(axis.text=element_text(size=12))
+
+b= ggplot(dplyr::filter(scdf,Year>2013),aes(x=Year,y=IDs))  + geom_line() + geom_point(color="green",size=3) + scale_y_continuous(name="", limits=c(0, NA)) + ggtitle("Individuals served") + theme_bw()+ theme(axis.text=element_text(size=12))
+
+c=  ggplot(dplyr::filter(scdf,Year>2013),aes(x=Year,y=NumPerID)) + geom_line() + scale_y_continuous(name="", limits=c(0, NA))+ geom_point(color="red",size=3) + ggtitle("Needles per Individual")+ theme_bw()+ theme(axis.text=element_text(size=12))
+
+d=  ggplot(dplyr::filter(scdf,Year>2013),aes(x=Year,y=TotalPctOver100)) + geom_line() + scale_y_continuous(name="", limits=c(0, 60))+ geom_point(color="black",size=3) + ggtitle("Percent taking over 100 needles")+ theme_bw()+ theme(axis.text=element_text(size=12))
+
+e=  ggplot(dplyr::filter(scdf,Year>2013),aes(x=Year,y=PctOthers*100)) + geom_line() + scale_y_continuous(name="", limits=c(0, 60))+ geom_point(color="black",size=3) + ggtitle("Percent receiving for others")+ theme_bw()+ theme(axis.text=element_text(size=12))
+
+grid.arrange(a, b, c, d,ncol = 2,nrow=2, 
+widths = unit(c(4,4), c("in","in")), 
+heights = unit(c(4,4), c("in","in"))
+)
+``` 
+
+
+# Multipanel bar plots
+```{r}
+library(gridExtra)  # Needed for grid.arrange
+library(grid) 
+
+a= ggplot(dplyr::filter(needf,Year>2013),aes(x=Year,y=Dispensed))  + geom_col(fill="firebrick") + 
+geom_text(aes(label=round(Dispensed),hjust = 0.5,vjust=0),nudge_y = -25000,color="gray98") +
+scale_y_continuous(labels = scales::comma, limits=c(0, 600000),name="") + ggtitle("Needles dispensed (Whole County)") + theme_bw() + theme(axis.text=element_text(size=12))
+
+
+b= ggplot(dplyr::filter(needf,Year>2013),aes(x=Year,y=IDs))  + geom_col(fill="seagreen") + 
+geom_text(aes(label=round(IDs),hjust = 0.5,vjust=0),nudge_y = -50,color="gray98") +
+scale_y_continuous(name="", limits=c(0, NA)) + ggtitle("Unique IDs served (Whole County) ") + theme_bw()+ theme(axis.text=element_text(size=12))
+
+c=  ggplot(dplyr::filter(scdf,Year>2013),aes(x=Year,y=NumPerID)) +
+	geom_col(fill="steelblue") +  # try dodgerblue3
+geom_text(aes(label=round(NumPerID),hjust = 0.5,vjust=0),nudge_y = -50,color="gray98") +
+scale_y_continuous(name="", limits=c(0, NA),breaks= seq(0,1000,by = 200))+ ggtitle("Needles per Individual per Year (SC Only)")+ theme_bw()+ theme(axis.text=element_text(size=12))
+
+d=  ggplot(dplyr::filter(scdf,Year>2013),aes(x=Year,y=c(PctOver100,PctOver200))) + geom_col() + scale_y_continuous(name="", limits=c(0, 60))+ geom_point(color="black",size=3) + ggtitle("Percent taking over 100 needles")+ theme_bw()+ theme(axis.text=element_text(size=12))
+
+pctdf = gather(data=scdf,starts_with("PctOver"), key = variable, value = number) %>% select(Year,variable,number,TotalPctOver100) %>% dplyr::filter(Year>2013) 
+
+dd = ggplot(pctdf,aes(x=Year,y=number,fill=as.factor(variable))) + geom_col() +
+	geom_text(data=dplyr::filter(pctdf,variable=="PctOver200"),aes(label=number,y=number,hjust = 0.5,vjust=1),nudge_y = -2,color="gray98") + 
+	ggtitle("Percent Receiving More Than 100 Needles (SC Only)")+
+	geom_text(data=dplyr::filter(pctdf,variable=="PctOver200"),aes(label=TotalPctOver100,y=TotalPctOver100,hjust = 0.5,vjust=0),nudge_y = 1,color="black") +
+ theme_bw()+ theme(axis.text=element_text(size=12))+
+scale_fill_manual("", values = c("PctOver200" = "black", "PctOver100" = "chocolate"))
+
+
+e=  ggplot(dplyr::filter(scdf,Year>2013),aes(x=Year,y=PctOthers*100)) + geom_line() + scale_y_continuous(name="", limits=c(0, 60))+ geom_point(color="black",size=3) + ggtitle("Percent receiving for others")+ theme_bw()+ theme(axis.text=element_text(size=12))
+
+grid.arrange(a, b, c, dd,ncol = 2,nrow=2, 
+widths = unit(c(6,6), c("in","in")), 
+heights = unit(c(4,4), c("in","in"))
+)
+``` 
+
+##### END MULTI
+
+### Monthly data
+```{r}
+mondf_orig = data.frame(stringsAsFactors=FALSE,
+             DateString = c("July 2019", "June 2019", "May 2019", "April 2019",
+                      "March 2019", "February 2019", "January 2019",
+                      "December 2018", "November 2018", "October 2018", "September 2018",
+                      "August 2018"),
+           Visits = c(210L, 172L, 198L, 167L, 158L, 155L, 177L, 207L, 221L,
+                      278L, 234L, 272L),
+              IDs = c(128L, 116L, 135L, 110L, 110L, 114L, 121L, 130L, 139L,
+                      168L, 157L, 172L),
+      SingleVisit = c(84L, 76L, 93L, 73L, 78L, 86L, 86L, 80L, 88L, 107L, 106L,
+                      107L),
+       MultiVisit = c(44L, 40L, 42L, 37L, 32L, 28L, 35L, 50L, 51L, 61L, 51L,
+                      65L),
+          ForSelf = c(78L, 68L, 61L, 44L, 44L, 38L, 48L, 75L, 88L, 103L, 106L,
+                      114L),
+        ForOthers = c(132L, 104L, 137L, 133L, 114L, 117L, 129L, 132L, 133L,
+                      175L, 128L, 155L),
+        Collected = c(56135L, 45342L, 59880L, 70280L, 62569L, 51911L, 56177L,
+                      54329L, 47716L, 54524L, 39395L, 47193L),
+        Dispensed = c(54539L, 43147L, 55690L, 68205L, 61199L, 51809L, 54597L,
+                      54138L, 47041L, 54247L, 39125L, 46613L),
+          Over100 = c(34L, 38L, 34L, 34L, 34L, 27L, 40L, 50L, 54L, 69L, 49L,
+                      56L),
+          Over200 = c(91L, 72L, 99L, 85L, 87L, 77L, 81L, 86L, 87L, 114L, 77L,
+                      94L),
+           # 1-24
+           Took12 = c(41L, 33L, 24L, 20L, 14L, 22L, 19L, 25L, 28L, 26L, 30L,
+                      37L),
+           #25-49
+           Took37 = c(17L, 11L, 19L, 8L, 6L, 8L, 13L, 14L, 12L, 16L, 26L, 17L),
+           #50-99
+           Took75 = c(21L, 14L, 18L, 17L, 11L, 13L, 24L, 26L, 37L, 47L, 45L,
+                      56L),
+    TotalUnder200 = c(7796L, 7553L, 7441L, 6911L, 6315L, 5585L, 8509L, 10268L,
+                      11655L, 14779L, 12047L, 13673L),
+        Remaining = c(46743L, 35594L, 48249L, 61294L, 54884L, 46224L, 46088L,
+                      43870L, 35386L, 39468L, 27078L, 32940L),
+   AverageOver200 = c(514L, 494L, 487L, 721L, 631L, 600L, 569L, 510L, 407L,
+                      346L, 352L, 350L)
+)
+
+mondf = mondf_orig %>% mutate(
+	Date=parse_date_time(mondf$DateString,"%m %y"),
+	RealVisits = (Over100+Over200) + (Took12+Took37+Took75), 
+	PctOver100 = 100*(Over100)/RealVisits,
+	PctOver200 = 100*(Over200)/RealVisits,
+	PctUnder100=100*(Took12+Took37+Took75)/RealVisits,
+	TotalOver100=round((PctOver100+PctOver200),0),
+	Category=factor("PctOver200"))
+
+str(mondf)
+submon = mondf %>% select(Date,starts_with("Pct")) %>%  pivot_longer(cols=starts_with("Pct"),values_to="Percent",names_ptypes=list(name=factor())) %>% mutate(Category=as.factor(name)) %>% select(-name)
+
+str(submon)
+```
+
+``` {r Monthly, fig.height = 5, fig.width = 7}
+{r Dispense, fig.height = 5, fig.width = 7}
+ggplot(submon,aes(x=Date,y=Percent,fill=forcats::fct_relevel(Category, "PctUnder100","PctOver100" , "PctOver200"))) + geom_col() +
+	scale_fill_manual("", values = c("PctUnder100"="lightskyblue","PctOver200" = "black", "PctOver100" = "chocolate"),labels=c("Under 100","Over 100","Over 200")) +
+ geom_text(data=dplyr::filter(submon,Category=="PctOver200"),aes(label=round(Percent,0),y=Percent,hjust = 0.5,vjust=1),nudge_y = -2,color="gray98") +
+	geom_text(data=mondf,aes(label=TotalOver100,x=Date,y=TotalOver100,hjust = 0.5,vjust=0),nudge_y = 0.5,color="black") + theme_bw()+ theme(axis.text=element_text(size=12))+ggtitle("Percent receiving more than 100 needles","SC only, per month")
+
+```
+```{r MonthlyDispense, fig.height = 6, fig.width = 10}
+ggplot(mondf,aes(x=Date,y=Dispensed)) + geom_col(fill="firebrick") + geom_text(aes(label=round(Dispensed),hjust = 0.5,vjust=0),size=6,nudge_y = -3000,color="gray98") +
+scale_y_continuous(name="Dispensed", labels = scales::comma, limits=c(0, 70000)) +theme_bw()  + ggtitle("Needles dispensed per month (SC only)") + theme_bw() + theme(axis.text=element_text(size=12))
+
+```
+```{r MonthlyIDs, fig.height = 6, fig.width = 10}
+ggplot(mondf,aes(x=Date,y=IDs)) + geom_col(fill="seagreen") + geom_text(aes(label=round(IDs),hjust = 0.5,vjust=0),size=6,nudge_y = -10,color="gray98") + scale_y_continuous(name="Unique IDs", labels = scales::comma, limits=c(0, 200)) +theme_bw()  + ggtitle("Unique visitors receiving syringes") + theme_bw() + theme(axis.text=element_text(size=12))
+
+```
+
+
+```{r MonthlyNeedlePerId, fig.height = 6, fig.width = 10}
+
+ggplot(mondf,aes(x=Date,y=Dispensed/IDs)) +
+	geom_col(fill="steelblue") +  # try dodgerblue3
+geom_text(aes(label=round(Dispensed/IDs),hjust = 0.5,vjust=0),nudge_y = -20,color="gray98") +
+scale_y_continuous(name="", limits=c(0, NA),breaks= seq(0,700,by = 100))+ ggtitle("Needles per ID per Month (SC Only)")+ theme_bw()+ theme(axis.text=element_text(size=12))
+```
+
+```{r NeedlesOver200, fig.height = 6, fig.width = 10}
+
+ggplot(mondf,aes(x=Date,y=AverageOver200)) +
+	geom_col(fill="dodgerblue3") +  # try dodgerblue3
+geom_text(aes(label=round(AverageOver200),hjust = 0.5,vjust=0),nudge_y = -20,color="gray98") +
+scale_y_continuous(name="", limits=c(0, NA),breaks= seq(0,700,by = 100))+ ggtitle("For those getting 200+, average per visit")+ theme_bw()+ theme(axis.text=element_text(size=12))
+```
+
+
+
